@@ -1,0 +1,22 @@
+- name: Configure ssh directory
+  include: ssh_dir.yml
+  with_items: "{{ users }}"
+  loop_control:
+    loop_var: user
+  tags:
+    - ssh
+
+- name: Setup sshd config
+  template:
+    src: sshd_config.j2
+    dest: /etc/ssh/sshd_config
+  tags:
+     - ssh
+
+- name: Restart sshd service
+  systemd:
+    name: sshd
+    state: restarted
+    daemon_reload: yes
+  tags:
+     - ssh
