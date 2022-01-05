@@ -18,5 +18,117 @@
     name: sshd
     state: restarted
     daemon_reload: yes
+  register: sshd_restart_result
+  tags:
+     - ssh
+
+# Firewall setting for Ubuntu
+- name: Deny all incoming with ufw
+  ufw:
+    direction: incoming
+    port: any
+    policy: deny
+  when:
+    - sshd_restart_result is defined
+    - sshd_restart_result is succeeded
+    - ansible_facts['os_family'] == 'Debian'
+  tags:
+     - ssh
+
+- name: Allow all outgoing with ufw
+  ufw:
+    direction: outgoing
+    proto: any
+    policy: allow
+  when:
+    - sshd_restart_result is defined
+    - sshd_restart_result is succeeded
+    - ansible_facts['os_family'] == 'Debian'
+  tags:
+     - ssh
+
+- name: Set logging with ufw
+  ufw:
+    logging: on
+
+- name: Allow sshd port with ufw
+  ufw:
+    rule: allow
+    port: "{{ ssh.port }}"
+    proto: tcp
+  when:
+    - sshd_restart_result is defined
+    - sshd_restart_result is succeeded
+    - ansible_facts['os_family'] == 'Debian'
+  tags:
+     - ssh
+
+- name: Enable ufw service
+  ufw:
+    state: enabled
+  when:
+    - sshd_restart_result is defined
+    - sshd_restart_result is succeeded
+    - ansible_facts['os_family'] == 'Debian'
+  tags:
+     - ssh
+
+- name: Reload ufw service
+  ufw:
+    state: reloaded
+  when:
+    - sshd_restart_result is defined
+    - sshd_restart_result is succeeded
+    - ansible_facts['os_family'] == 'Debian'
+  tags:
+     - ssh
+
+# Firewall setting for CentOS
+- name: Gather service facts on CentOS
+  service_facts:
+  when:
+    - sshd_restart_result is defined
+    - sshd_restart_result is succeeded
+    - ansible_facts['os_family'] == 'RedHat'
+  tags:
+     - ssh
+
+- name: Start Firewalld service
+  systemd:
+    name: firewalld
+    state: started
+  when:
+    - sshd_restart_result is defined
+    - sshd_restart_result is succeeded
+    - ansible_facts['os_family'] == 'RedHat'
+    - ansible_facts.services['firewalld.service'].state == 'started'
+  tags:
+     - ssh
+
+- name: Allow sshd port with Firewalld
+  firewalld:
+    permanent: yes
+    immediate: yes
+    port: "{{ item.port }}/{{ item.proto }}"
+    state: "{{ item.state }}"
+    zone: "{{ item.zone }}"
+  with_items:
+    - { port: "{{ ssh.port }}", proto: "tcp", state: "enabled", zone: "public" }
+  when:
+    - sshd_restart_result is defined
+    - sshd_restart_result is succeeded
+    - ansible_facts['os_family'] == 'RedHat'
+    - ansible_facts.services['firewalld.service'].state == 'started'
+  tags:
+     - ssh
+
+- name: Reload Firewalld service
+  systemd:
+    name: firewalld
+    state: reloaded
+  when:
+    - sshd_restart_result is defined
+    - sshd_restart_result is succeeded
+    - ansible_facts['os_family'] == 'RedHat'
   tags:
      - ssh
