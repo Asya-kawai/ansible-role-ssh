@@ -1,38 +1,38 @@
+---
 - name: Check the user home directory exists
   stat:
-    path: "/home/{{ user.name }}"
+    path: "{{ user.home_dir.rstrip('/') }}"
   register: user_dir
   tags:
     - ssh
+    - ssh-check-user-home-directory
 
 - name: Create a ssh directory
   file:
-    path: "/home/{{ user.name }}/.ssh"
+    path: "{{ user.home_dir.rstrip('/') }}/.ssh"
     state: directory
     owner: "{{ user.name }}"
     group: "{{ user.name }}"
     mode: 0700
   when: user_dir.stat.exists
-  register: create_ssh_dir_result
   tags:
     - ssh
+    - ssh-create-ssh-directory
 
-- name: Check the ssh directory exists
-  stat:
-    path: "/home/{{ user.name }}/.ssh"
-  register: ssh_dir
-  tags:
-    - ssh
-
-# When use it, you should create a directory of authorized_keys/{{ user.name }}/ and
-# put public keys into authorized_keys/{{ user.name }}/{{ inventory_hostname }}.
-- name: Setup authorized keys
+# When use it,
+# you should create a directory of authorized_keys/{{ user.name }}/ and
+# put public keys into
+# authorized_keys/{{ user.name }}/{{ inventory_hostname }}.
+- name: Configure authorized keys
   copy:
-    src: "authorized_keys/{{ user.name }}/{{ inventory_hostname }}"
-    dest: "/home/{{ user.name }}/.ssh/authorized_keys"
+    src: "{{ user.authorized_keys_file }}"
+    dest: "{{ user.home_dir.rstrip('/') }}/.ssh/authorized_keys"
     owner: "{{ user.name }}"
     group: "{{ user.name }}"
     mode: 0600
-  when: ssh_dir.stat.exists
+  when:
+    - user_dir.stat.exists
+    - user.authorized_keys_file | length > 0
   tags:
     - ssh
+    - ssh-configure-authorized-keys

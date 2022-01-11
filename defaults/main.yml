@@ -1,0 +1,16 @@
+---
+users:
+  - name: root
+    home_dir: /root
+    authorized_keys_file: "{{ lookup('file', 'no_such_file', errors='ignore') }}"
+
+ssh_debian_install:
+  - openssh-server
+  - openssh-client
+  - ufw
+
+ssh_redhat_install:
+  - openssh-server
+  - firewalld
+
+ssh_port: 22

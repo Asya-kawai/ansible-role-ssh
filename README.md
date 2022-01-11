@@ -46,7 +46,7 @@ centos ansible_host=10.10.10.11 ansible_port=22
 `all.yml` sets common variables.
 
 This role refers `ssh` variable having `port` and
-change the default port 22 to `ssh.port`
+change the default port 22 to `ssh_port`
 
 ```
 # Common settings
@@ -56,13 +56,14 @@ ansible_user: root
 # Private_key is saved in local host only!
 ansible_ssh_private_key_file: ""
 
-ssh:
-  port: 22222
+ssh_port: 22222
 ```
 
 ## Group Vars / Ubuntu(webserver_ubuntu.yml)
 
 `webserver_ubuntu.yml` is `webservers` host's children.
+
+This role refers `users` variable having `name`,`home_dir` and `authorized_keys_file`.
 
 ```
 ansible_user: ubuntu
@@ -71,6 +72,8 @@ ansible_become_password: 'ThisIsSecret!'
 
 users:
   - name: aintek
+    home_dir: /home/aintek
+    authorized_keys_file: '/path/to/your_home/.ssh/authorized_keys'
 ```
 
 ## Group Vars / CentOS(webserver_centos.yml)
@@ -80,14 +83,9 @@ users:
 ```
 users:
   - name: aintek
+    home_dir: /home/aintek
+    authorized_keys_file: '/home/aintek/.ssh/authorized_keys'
 ```
-
-## Authorized_keys
-
-This role copy `authorized_keys` in `./authorized_keys/{{ user.name }}/{{ inventory_hostname }}`.
-
-So when you want to apply this role to `ubuntu` and `centos` for `aintek` user(you want to create aintek's authorized_keys),
-you should make `./authorized_kyes/aintek/ubuntu` and `./authorized_kyes/aintek/centos`.
 
 # How to DryRun and Apply
 
@@ -95,10 +93,14 @@ DryRun
 
 ```
 ansible-playbook -i inventory --private-key="~/.ssh/your_private_key" -CD webservers.yml --tags ssh
+
+ansible-playbook -i inventory --private-key="~/.ssh/your_private_key" -CD webservers.yml --tags ssh-ufw
 ```
 
 Apply
 
 ```
 ansible-playbook -i inventory --private-key="~/.ssh/your_private_key" -D webservers.yml --tags ssh
+
+ansible-playbook -i inventory --private-key="~/.ssh/your_private_key" -D webservers.yml --tags ssh-firewalld
 ```

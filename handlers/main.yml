@@ -1,0 +1,21 @@
+---
+- name: Restart sshd service
+  service:
+    name: sshd
+    state: restarted
+  listen: Restart sshd
+
+- name: Reload ufw service
+  ufw:
+    state: reloaded
+  when:
+    - ansible_facts['os_family'] == 'Debian'
+  listen: Reload ufw
+
+- name: Reload Firewalld service
+  systemd:
+    name: firewalld
+    state: reloaded
+  when:
+    - ansible_facts['os_family'] == 'RedHat'
+  listen: Reload firewalld

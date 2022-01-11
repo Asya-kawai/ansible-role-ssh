@@ -1,3 +1,46 @@
+---
+- name: Update OS package caches for Debian
+  apt:
+    update_cache: yes
+  when: ansible_facts['os_family'] == 'Debian'
+  tags:
+    - ssh
+    - ssh-update-os-packages
+
+- name: Update OS package caches for CentOS
+  dnf:
+    update_cache: yes
+  when: ansible_facts['os_family'] == 'RedHat'
+  tags:
+    - ssh
+    - ssh-update-os-packages
+
+- name: Update OS packages
+  package:
+    name: '*'
+    state: latest
+  tags:
+    - ssh
+    - ssh-update-os-packages
+
+- name: Install OS packages for Debian
+  package:
+    name: "{{ ssh_debian_install }}"
+    state: present
+  when: ansible_facts['os_family'] == 'Debian'
+  tags:
+    - ssh
+    - ssh-install-os-packages
+
+- name: Install OS packages for CentOS
+  package:
+    name: "{{ ssh_redhat_install }}"
+    state: present
+  when: ansible_facts['os_family'] == 'RedHat'
+  tags:
+    - ssh
+    - ssh-install-os-packages
+
 - name: Configure ssh directory
   include: ssh_dir.yml
   with_items: "{{ users }}"
@@ -5,22 +48,40 @@
     loop_var: user
   tags:
     - ssh
+    - ssh-configure-ssh-directory
 
-- name: Setup sshd config
+- name: Check the sshd directory exists
+  stat:
+    path: "/etc/ssh"
+  register: sshd_dir
+  tags:
+    - ssh
+    - ssh-check-sshd-directroy
+
+- name: Configure sshd config
   template:
     src: sshd_config.j2
     dest: /etc/ssh/sshd_config
+    owner: root
+    group: root
+    mode: 0644
+  when:
+    - sshd_dir.stat.exists
+  notify:
+    - Restart sshd
   tags:
-     - ssh
+    - ssh
+    - ssh-configure-ssh-config
 
 - name: Restart sshd service
   systemd:
     name: sshd
-    state: restarted
-    daemon_reload: yes
-  register: sshd_restart_result
+    state: started
+    daemon_reload: true
+    enabled: true
   tags:
-     - ssh
+    - ssh
+    - ssh-restart-sshd-service
 
 # Firewall setting for Ubuntu
 - name: Deny all incoming with ufw
@@ -29,11 +90,14 @@
     port: any
     policy: deny
   when:
-    - sshd_restart_result is defined
-    - sshd_restart_result is succeeded
     - ansible_facts['os_family'] == 'Debian'
+  notify:
+    - Reload ufw
   tags:
-     - ssh
+    - ssh-ufw
+    - ssh-ufw-deny-all-incoming
+    - ssh-firewalld
+    - ssh-firewalld-deny-all-incoming
 
 - name: Allow all outgoing with ufw
   ufw:
@@ -41,71 +105,73 @@
     proto: any
     policy: allow
   when:
-    - sshd_restart_result is defined
-    - sshd_restart_result is succeeded
     - ansible_facts['os_family'] == 'Debian'
+  notify:
+    - Reload ufw
   tags:
-     - ssh
+    - ssh-ufw
+    - ssh-ufw-allow-all-outcoming
+    - ssh-firewalld
+    - ssh-firewalld-allow-all-outcoming
 
 - name: Set logging with ufw
   ufw:
     logging: on
+  notify:
+    - Reload ufw
+  tags:
+    - ssh-ufw
+    - ssh-ufw-set-loggin
+    - ssh-firewalld
+    - ssh-firewalld-set-loggin
 
-- name: Allow sshd port with ufw
+- name: Allow sshd specific port with ufw
   ufw:
     rule: allow
-    port: "{{ ssh.port }}"
+    port: "{{ ssh_port }}"
     proto: tcp
   when:
-    - sshd_restart_result is defined
-    - sshd_restart_result is succeeded
     - ansible_facts['os_family'] == 'Debian'
+  notify:
+    - Reload ufw
   tags:
-     - ssh
+    - ssh-ufw
+    - ssh-ufw-allow-sshd
+    - ssh-firewalld
+    - ssh-firewalld-allow-sshd
 
 - name: Enable ufw service
   ufw:
     state: enabled
   when:
-    - sshd_restart_result is defined
-    - sshd_restart_result is succeeded
     - ansible_facts['os_family'] == 'Debian'
   tags:
-     - ssh
-
-- name: Reload ufw service
-  ufw:
-    state: reloaded
-  when:
-    - sshd_restart_result is defined
-    - sshd_restart_result is succeeded
-    - ansible_facts['os_family'] == 'Debian'
-  tags:
-     - ssh
+    - ssh-ufw
+    - ssh-ufw-enable
+    - ssh-firewalld
+    - ssh-firewalld-enable
 
 # Firewall setting for CentOS
 - name: Gather service facts on CentOS
   service_facts:
   when:
-    - sshd_restart_result is defined
-    - sshd_restart_result is succeeded
     - ansible_facts['os_family'] == 'RedHat'
   tags:
-     - ssh
+    - ssh-firewalld
+    - ssh-firewalld-gather-facts
 
 - name: Start Firewalld service
   systemd:
     name: firewalld
     state: started
   when:
-    - sshd_restart_result is defined
-    - sshd_restart_result is succeeded
     - ansible_facts['os_family'] == 'RedHat'
     - ansible_facts.services['firewalld.service'].state == 'started'
   tags:
-     - ssh
+    - ssh-firewalld
+    - ssh-firewalld-start
 
-- name: Allow sshd port with Firewalld
+- name: Allow sshd specific port with Firewalld
   firewalld:
     permanent: yes
     immediate: yes
@@ -113,22 +179,22 @@
     state: "{{ item.state }}"
     zone: "{{ item.zone }}"
   with_items:
-    - { port: "{{ ssh.port }}", proto: "tcp", state: "enabled", zone: "public" }
+    - { port: "{{ ssh_port }}", proto: "tcp", state: "enabled", zone: "public" }
   when:
-    - sshd_restart_result is defined
-    - sshd_restart_result is succeeded
     - ansible_facts['os_family'] == 'RedHat'
     - ansible_facts.services['firewalld.service'].state == 'started'
+  notify:
+    - Reload firewalld
   tags:
-     - ssh
+    - ssh-firewalld
+    - ssh-firewalld-allow-sshd
 
 - name: Reload Firewalld service
   systemd:
     name: firewalld
     state: reloaded
   when:
-    - sshd_restart_result is defined
-    - sshd_restart_result is succeeded
     - ansible_facts['os_family'] == 'RedHat'
   tags:
-     - ssh
+    - ssh-firewalld
+    - ssh-firewalld-reload
