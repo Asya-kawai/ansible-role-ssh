@@ -19,10 +19,6 @@
     - ssh
     - ssh-create-ssh-directory
 
-# When use it,
-# you should create a directory of authorized_keys/{{ user.name }}/ and
-# put public keys into
-# authorized_keys/{{ user.name }}/{{ inventory_hostname }}.
 - name: Configure authorized keys
   copy:
     src: "{{ user.authorized_keys_file }}"
