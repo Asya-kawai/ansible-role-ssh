@@ -1,4 +1,14 @@
 ---
+# To check whether firewalld is started or stopped.
+- name: Gather service facts on CentOS
+  service_facts:
+  when:
+    - ansible_facts['os_family'] == 'RedHat'
+  tags:
+    - ssh
+    - ssh-firewalld
+    - ssh-firewalld-gather-facts
+
 - name: Update OS package caches for Debian
   apt:
     update_cache: yes
@@ -41,6 +51,30 @@
     - ssh
     - ssh-install-os-packages
 
+# Stop ufw before ssh configuration applied.
+- name: Stop ufw
+  ufw:
+    state: disabled
+  when:
+    - ansible_facts['os_family'] == 'Debian'
+  tags:
+    - ssh
+    - ssh-ufw-disable
+    - ssh-firewalld-disable
+
+# Stop firewalld before ssh configuration applied.
+- name: Stop Firewalld service
+  systemd:
+    name: firewalld
+    state: stopped
+  when:
+    - ansible_facts['os_family'] == 'RedHat'
+    - ansible_facts.services['firewalld.service'].state == 'started'
+  tags:
+    - ssh
+    - ssh-firewalld-stop
+
+# SSH configuration
 - name: Configure ssh directory
   include: ssh_dir.yml
   with_items: "{{ users }}"
@@ -60,11 +94,13 @@
 
 - name: Configure sshd config
   template:
-    src: sshd_config.j2
-    dest: /etc/ssh/sshd_config
+    src: "{{ ansible_facts['os_family'] }}/{{ item.lstrip('/') }}.j2"
+    dest: "{{ item }}"
     owner: root
     group: root
     mode: 0644
+  with_items:
+    - "{{ ssh_sshd_config_path }}"
   when:
     - sshd_dir.stat.exists
   notify:
@@ -119,11 +155,13 @@
     logging: on
   notify:
     - Reload ufw
+  when:
+    - ansible_facts['os_family'] == 'Debian'
   tags:
     - ssh-ufw
-    - ssh-ufw-set-loggin
+    - ssh-ufw-set-logging
     - ssh-firewalld
-    - ssh-firewalld-set-loggin
+    - ssh-firewalld-set-logging
 
 - name: Allow sshd specific port with ufw
   ufw:
@@ -152,21 +190,15 @@
     - ssh-firewalld-enable
 
 # Firewall setting for CentOS
-- name: Gather service facts on CentOS
-  service_facts:
-  when:
-    - ansible_facts['os_family'] == 'RedHat'
-  tags:
-    - ssh-firewalld
-    - ssh-firewalld-gather-facts
-
 - name: Start Firewalld service
   systemd:
     name: firewalld
     state: started
+    daemon_reload: true
+    enabled: true
   when:
     - ansible_facts['os_family'] == 'RedHat'
-    - ansible_facts.services['firewalld.service'].state == 'started'
+    - not ansible_facts.services['firewalld.service'].state == 'started'
   tags:
     - ssh-firewalld
     - ssh-firewalld-start
@@ -182,7 +214,6 @@
     - { port: "{{ ssh_port }}", proto: "tcp", state: "enabled", zone: "public" }
   when:
     - ansible_facts['os_family'] == 'RedHat'
-    - ansible_facts.services['firewalld.service'].state == 'started'
   notify:
     - Reload firewalld
   tags:
