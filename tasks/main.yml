@@ -213,6 +213,7 @@
     - { port: "{{ ssh_port }}", proto: "tcp", state: "enabled", zone: "public" }
   when:
     - ansible_facts['os_family'] == 'RedHat'
+    - ansible_facts.services['firewalld.service'].state == 'started'
   notify:
     - Reload firewalld
   tags:
