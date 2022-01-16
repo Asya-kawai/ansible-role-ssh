@@ -69,7 +69,7 @@
     state: stopped
   when:
     - ansible_facts['os_family'] == 'RedHat'
-#    - ansible_facts['services'] ansible_facts.services['firewalld.service'].state == 'started'
+    #    - ansible_facts['services'] ansible_facts.services['firewalld.service'].state == 'started'
   tags:
     - ssh
     - ssh-firewalld-stop
