@@ -1,5 +1,7 @@
 # Ansible Role For SSH
 
+[![CI](https://github.com/Asya-kawai/ansible-role-ssh/actions/workflows/ci.yml/badge.svg)](https://github.com/Asya-kawai/ansible-role-ssh/actions/workflows?query=workflow%3ACI)
+
 Setup SSH secure configration with specific port.
 
 # Examples
