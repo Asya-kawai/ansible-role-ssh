@@ -10,7 +10,9 @@
 # possible, but leave them commented.  Uncommented options override the
 # default value.
 
+{% if (ansible_facts['distribution_major_version'] | int) > 18 %}
 Include /etc/ssh/sshd_config.d/*.conf
+{% endif %}
 
 #Port 22
 Port {{ ssh_port }}
