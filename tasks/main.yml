@@ -1,14 +1,4 @@
 ---
-# To check whether firewalld is started or stopped.
-- name: Gather service facts on CentOS
-  service_facts:
-  when:
-    - ansible_facts['os_family'] == 'RedHat'
-  tags:
-    - ssh
-    - ssh-firewalld
-    - ssh-firewalld-gather-facts
-
 - name: Update OS package caches for Debian
   apt:
     update_cache: yes
@@ -57,6 +47,7 @@
     state: disabled
   when:
     - ansible_facts['os_family'] == 'Debian'
+  changed_when: false
   tags:
     - ssh
     - ssh-ufw-disable
@@ -156,6 +147,7 @@
     - Reload ufw
   when:
     - ansible_facts['os_family'] == 'Debian'
+  changed_when: false
   tags:
     - ssh-ufw
     - ssh-ufw-set-logging
@@ -182,6 +174,7 @@
     state: enabled
   when:
     - ansible_facts['os_family'] == 'Debian'
+  changed_when: false
   tags:
     - ssh-ufw
     - ssh-ufw-enable
@@ -189,6 +182,15 @@
     - ssh-firewalld-enable
 
 # Firewall setting for CentOS
+- name: Gather service facts on CentOS before Firewalld started
+  service_facts:
+  when:
+    - ansible_facts['os_family'] == 'RedHat'
+  tags:
+    - ssh
+    - ssh-firewalld
+    - ssh-firewalld-gather-facts
+
 - name: Start Firewalld service
   systemd:
     name: firewalld
@@ -202,6 +204,15 @@
     - ssh-firewalld
     - ssh-firewalld-start
 
+- name: Gather service facts on CentOS before Firewalld started
+  service_facts:
+  when:
+    - ansible_facts['os_family'] == 'RedHat'
+  tags:
+    - ssh
+    - ssh-firewalld
+    - ssh-firewalld-gather-facts
+
 - name: Allow sshd specific port with Firewalld
   firewalld:
     permanent: yes
@@ -213,7 +224,7 @@
     - { port: "{{ ssh_port }}", proto: "tcp", state: "enabled", zone: "public" }
   when:
     - ansible_facts['os_family'] == 'RedHat'
-    - ansible_facts.services['firewalld.service'].state == 'started'
+    - ansible_facts.services['firewalld.service'].state == 'running'
   notify:
     - Reload firewalld
   tags:
@@ -226,6 +237,7 @@
     state: reloaded
   when:
     - ansible_facts['os_family'] == 'RedHat'
+  changed_when: false
   tags:
     - ssh-firewalld
     - ssh-firewalld-reload
