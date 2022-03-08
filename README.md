@@ -4,6 +4,9 @@
 
 Setup SSH secure configration with specific port.
 
+Caution: Configure `sshd_config` to allow `PubkeyAuthentication` only(disale passowrd authentication).
+If you don't set authorized_keys, you can't login servers after applied this role perhaps.
+
 # Examples
 
 Directory tree.
