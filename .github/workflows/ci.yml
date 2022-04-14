@@ -24,7 +24,9 @@ jobs:
         run: pip install ansible-lint[community,yamllint]
 
       - name: Install ansible modules
-        run: ansible-galaxy collection install community.general
+        run: |
+          ansible-galaxy collection install community.general
+          ansible-galaxy collection install ansible.posix
 
       - name: Lint code
         run: |
