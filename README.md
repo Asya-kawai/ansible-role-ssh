@@ -92,6 +92,26 @@ users:
     authorized_keys_file: '/home/aintek/.ssh/authorized_keys'
 ```
 
+## Group Vars CAUTION!
+
+When you change ssh_port and enable firewall,
+ansible may disconnect to the server.
+
+As a result, you can not connect to the server on ssh_port,
+until restart the server.
+
+In particular, RHEL does not fully function firewall tasks...
+Even after reboot, you will not be able to login(it's a bug).
+
+If you want to enable firewall,
+select an alternate role for firewall.
+ex) [ansible-role-firewall](https://github.com/Asya-kawai/ansible-role-firewall)
+
+```
+# We don't recommend 'true'.
+ssh_firewall_enable: false
+```
+
 # How to DryRun and Apply
 
 DryRun

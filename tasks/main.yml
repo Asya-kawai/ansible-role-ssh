@@ -117,6 +117,7 @@
     policy: deny
   when:
     - ansible_facts['os_family'] == 'Debian'
+    - ssh_firewall_enable
   notify:
     - Reload ufw
   tags:
@@ -132,6 +133,7 @@
     policy: allow
   when:
     - ansible_facts['os_family'] == 'Debian'
+    - ssh_firewall_enable
   notify:
     - Reload ufw
   tags:
@@ -147,6 +149,7 @@
     - Reload ufw
   when:
     - ansible_facts['os_family'] == 'Debian'
+    - ssh_firewall_enable
   changed_when: false
   tags:
     - ssh-ufw
@@ -161,6 +164,7 @@
     proto: tcp
   when:
     - ansible_facts['os_family'] == 'Debian'
+    - ssh_firewall_enable
   notify:
     - Reload ufw
   tags:
@@ -174,6 +178,7 @@
     state: enabled
   when:
     - ansible_facts['os_family'] == 'Debian'
+    - ssh_firewall_enable
   changed_when: false
   tags:
     - ssh-ufw
@@ -186,6 +191,7 @@
   service_facts:
   when:
     - ansible_facts['os_family'] == 'RedHat'
+    - ssh_firewall_enable
   tags:
     - ssh
     - ssh-firewalld
@@ -200,6 +206,7 @@
   when:
     - ansible_facts['os_family'] == 'RedHat'
     - not ansible_facts.services['firewalld.service'].state == 'started'
+    - ssh_firewall_enable
   tags:
     - ssh-firewalld
     - ssh-firewalld-start
@@ -208,6 +215,7 @@
   service_facts:
   when:
     - ansible_facts['os_family'] == 'RedHat'
+    - ssh_firewall_enable
   tags:
     - ssh
     - ssh-firewalld
@@ -225,6 +233,7 @@
   when:
     - ansible_facts['os_family'] == 'RedHat'
     - ansible_facts.services['firewalld.service'].state == 'running'
+    - ssh_firewall_enable
   notify:
     - Reload firewalld
   tags:
@@ -237,6 +246,7 @@
     state: reloaded
   when:
     - ansible_facts['os_family'] == 'RedHat'
+    - ssh_firewall_enable
   changed_when: false
   tags:
     - ssh-firewalld
