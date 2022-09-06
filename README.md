@@ -32,7 +32,7 @@ Directory tree.
 
 Bofore apply this role, use default ssh port `22`.
 
-Note: You should fix ssh ports to `group_vars/all.yml`'s port number(`22222`) after this role applied.
+Note: You should fix ssh ports to `group_vars/all.yml`'s port number(ex.`22222`) after this role applied.
 
 ```
 [webservers:children]
