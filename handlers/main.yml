@@ -6,7 +6,7 @@
   listen: Restart sshd
 
 - name: Reload ufw service
-  ufw:
+  community.general.ufw:
     state: reloaded
   when:
     - ansible_facts['os_family'] == 'Debian'

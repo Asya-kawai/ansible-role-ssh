@@ -43,7 +43,7 @@
 
 # Stop ufw before ssh configuration applied.
 - name: Stop ufw
-  ufw:
+  community.general.ufw:
     state: disabled
   when:
     - ansible_facts['os_family'] == 'Debian'
@@ -66,7 +66,7 @@
 
 # SSH configuration
 - name: Configure ssh directory
-  include: ssh_dir.yml
+  include_tasks: ssh_dir.yml
   with_items: "{{ users }}"
   loop_control:
     loop_var: user
@@ -111,7 +111,7 @@
 
 # Firewall setting for Ubuntu
 - name: Deny all incoming with ufw
-  ufw:
+  community.general.ufw:
     direction: incoming
     port: any
     policy: deny
@@ -127,7 +127,7 @@
     - ssh-firewalld-deny-all-incoming
 
 - name: Allow all outgoing with ufw
-  ufw:
+  community.general.ufw:
     direction: outgoing
     proto: any
     policy: allow
@@ -143,7 +143,7 @@
     - ssh-firewalld-allow-all-outcoming
 
 - name: Set logging with ufw
-  ufw:
+  community.general.ufw:
     logging: on
   notify:
     - Reload ufw
@@ -158,7 +158,7 @@
     - ssh-firewalld-set-logging
 
 - name: Allow sshd specific port with ufw
-  ufw:
+  community.general.ufw:
     rule: allow
     port: "{{ ssh_port }}"
     proto: tcp
@@ -174,7 +174,7 @@
     - ssh-firewalld-allow-sshd
 
 - name: Enable ufw service
-  ufw:
+  community.general.ufw:
     state: enabled
   when:
     - ansible_facts['os_family'] == 'Debian'
@@ -222,7 +222,7 @@
     - ssh-firewalld-gather-facts
 
 - name: Allow sshd specific port with Firewalld
-  firewalld:
+  ansible.posix.firewalld:
     permanent: yes
     immediate: yes
     port: "{{ item.port }}/{{ item.proto }}"
