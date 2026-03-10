@@ -101,7 +101,7 @@
 
 - name: Restart sshd service
   systemd:
-    name: sshd
+    name: ssh
     state: started
     daemon_reload: true
     enabled: true
